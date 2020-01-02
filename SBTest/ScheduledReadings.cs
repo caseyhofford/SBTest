@@ -59,17 +59,9 @@ namespace SBTest
                     var rows = await cmdInsert.ExecuteNonQueryAsync();
                     log.LogInformation($"{rows} rows were updated");
                 }
-                /*                var text = "INSERT INTO Reading " +
-                                        "SET [Status] = 5  WHERE ShipDate < GetDate();";
-
-                                using (SqlCommand cmd = new SqlCommand(text, conn))
-                                {
-                                    // Execute the command and log the # rows affected.
-                                    var rows = await cmd.ExecuteNonQueryAsync();
-                                    log.LogInformation($"{rows} rows were updated");
-                                }*/
             }
         }
+        //Takes in a ZipCode as a string and returns weather data from the API as an object
         public static dynamic GetWeather(string zip)
         {
             string token = "8358673f01a549b46b006ef9858d324e";
@@ -81,6 +73,7 @@ namespace SBTest
             return JsonConvert.DeserializeObject(response.Content);
         }
 
+        //Takes in an object containing a weather type from the API response. Adds to database if it does not exist and returns true on success
         public static bool AddWeatherType(dynamic weatherType)
         {
             var str = Environment.GetEnvironmentVariable("sqldb_connection");
@@ -105,7 +98,8 @@ namespace SBTest
             }
         }
 
-        //This function gets the DayID for a specified datetime and zipcode
+        //Gets the DayID for a specified datetime and zipcode, adds it if not found. Returns the DayID
+        //Requires a zipcode string, the date as a double of unix time, the zips timezone and the API response's sys field
         public static string GetDayID(string zipcode, double unixDate, double timezone, dynamic sched)
         {
             //double unixDate = Convert.ToDouble(unixDateStr);
@@ -130,6 +124,7 @@ namespace SBTest
             {
 
                 conn.Open();
+                //Query to add day if it doesn't exist
                 string query = "BEGIN " +
                                 "IF NOT EXISTS " +
                                     $"(SELECT * FROM Day WHERE LocationZipID = {zipcode} AND Day = \'{dayStr}\') " +
@@ -145,6 +140,7 @@ namespace SBTest
                     int rows = cmd.ExecuteNonQuery();
                     Console.WriteLine($"{rows} rows updated");
                 }
+                //query to get DayID
                 string getId = $"SELECT DayID FROM Day WHERE LocationZipID = {zipcode} AND Day = \'{dayStr}\';";
                 Console.WriteLine(getId);
                 using (SqlCommand cmd = new SqlCommand(getId, conn))
