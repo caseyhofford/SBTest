@@ -37,7 +37,7 @@ namespace SBTest
                         //Convert datetime to YYYY-MM-DD hh:mm:ss
                         DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
                         DateTime readDT = epoch.AddSeconds(Convert.ToDouble(weatherData.dt));
-                        string formatDT = readDT.ToString("yyyy-MM-dd hh:mm:ss");
+                        string formatDT = readDT.ToString("yyyy-MM-dd HH:mm:ss");
 
                         //Set Weather Type
                         dynamic weatherType = weatherData.weather[0];
