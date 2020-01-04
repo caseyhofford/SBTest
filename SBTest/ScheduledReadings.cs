@@ -71,28 +71,20 @@ namespace SBTest
         }
 
         //Takes in an object containing a weather type from the API response. Adds to database if it does not exist and returns true on success
-        public static bool AddWeatherType(dynamic weatherType)
+        public bool AddWeatherType(dynamic weatherType)
         {
-            var str = Environment.GetEnvironmentVariable("sqldb_connection");
-            using (SqlConnection conn = new SqlConnection(str))
+            bool exists = true ? weatherContext.WeatherType.Find(weatherType.id): false;
+            if (!exists) 
             {
-                conn.Open();
-                string cmd = "BEGIN " +
-                                "IF NOT EXISTS " +
-                                    $"(SELECT * FROM WeatherType WHERE WeatherTypeID = {weatherType.id})" +
-                                "BEGIN " +
-                                    "INSERT INTO WeatherType ([WeatherTypeID],[Name],[Description]) " +
-                                    $"VALUES ({weatherType.id},\'{weatherType.main}\',\'{weatherType.description}\') " +
-                                "END " +
-                            "END";
-                Console.WriteLine(cmd);
-                using (SqlCommand cmdInsert = new SqlCommand(cmd, conn))
+                weatherContext.Add(new WeatherType
                 {
-                    var rows = cmdInsert.ExecuteNonQuery();
-                    Console.WriteLine($"{rows} rows were updated");
-                    return true;
-                }
+                    WeatherTypeID = weatherType.id,
+                    Name = weatherType.main,
+                    Description = weatherType.description
+                });
+                return true;
             }
+            return exists;
         }
 
         //Gets the DayID for a specified datetime and zipcode, adds it if not found. Returns the DayID
@@ -103,11 +95,12 @@ namespace SBTest
             //double timezone = Convert.ToDouble(timezoneStr);
             Console.WriteLine("Entered GetDayID");
             DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
-            //Get Current Day String for Locale
+            //Get Current Day String for Local TZ
             double localtimeUnix = unixDate + timezone;
             DateTime localDate = epoch.AddSeconds(localtimeUnix);
             string dayStr = localDate.ToString("yyyy-MM-dd");
-
+            //Originally extracted Time without date to store sunset and sunrise as time of day
+            //May be better to store as UTC DateTime if DateTime type is required
             //Get sunrise and sunset time strings
             double sunrise = Convert.ToDouble(sched.sunrise);
             DateTime sunriseDT = epoch.AddSeconds(sunrise + timezone);

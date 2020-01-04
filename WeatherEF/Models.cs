@@ -88,7 +88,9 @@ namespace WeatherEF
         public int DayID { get; set; }
         public int LocationZipID { get; set; }
         public DateTime Date { get; set; }
+        //Would be better to use type "Time" than DateTime
         public DateTime Sunrise { get; set; }
+        //Would be better to use type "Time" than DateTime
         public DateTime Sunset { get; set; }
 
         public ICollection<Reading> Readings { get; set; }

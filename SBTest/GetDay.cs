@@ -31,12 +31,16 @@ namespace SBTest
             log.LogInformation("C# HTTP trigger function processed a request.");
             int zip = 0;
             IQueryable<Reading> readings = weatherContext.Reading;
+            IQueryable<Day> days = weatherContext.Day;
             try
             {
                 zip = Convert.ToInt32(req.Query["zip"]);
-                Console.WriteLine("Zip parameter:: "+Convert.ToString(zip));
-                readings = readings.Where(r => r.LocationZipID == zip);
-                //readings = readings.Where(r => r.LocationZipID == zip);
+                Console.WriteLine("Zip parameter:: " + Convert.ToString(zip));
+                if (zip != 0)
+                {
+                    readings = readings.Where(r => r.LocationZipID == zip);
+                    days = days.Where(d => d.LocationZipID == zip);
+                }
             }
             catch (FormatException)
             {
@@ -47,17 +51,30 @@ namespace SBTest
                 throw ex;
             }
             readings = readings.Where(r => r.ReadingDateTime > DateTime.UtcNow.AddHours(-24));
+            days = days.Where(r => r.Date.Date == DateTime.Today.Date);
             decimal Temperature = readings.First().Temperature;
-            var query = from read in readings
-                        select new
-                        {
-                            ZipCode = read.LocationZipID,
-                            DateTime = read.ReadingDateTime,
-                            Temperature = read.Temperature,
-                            WindSpeed = read.WindSpeed
-                        };
-            string jsonString = JsonConvert.SerializeObject(query.ToArray());
-            return readings != null ? (ActionResult)new OkObjectResult(jsonString) : new BadRequestObjectResult("No Zip Provided");
+            //var readQ = from read in readings
+
+
+            var dayQ = from day in days
+                       select new
+                       {
+                           Zip = day.LocationZipID,
+                           day.Date,
+                           Sunrise = day.Sunrise.TimeOfDay,
+                           Sunset = day.Sunset.TimeOfDay,
+                           Readings =
+                           from read in readings.Where(r => r.ReadingDateTime > DateTime.UtcNow.AddHours(-24) && r.LocationZipID == day.LocationZipID)
+                           select new
+                           {
+                               ZipCode = read.LocationZipID,
+                               DateTime = read.ReadingDateTime,
+                               Temperature = read.Temperature,
+                               WindSpeed = read.WindSpeed
+                           }
+                       };
+            Array dayArray = dayQ.ToArray();
+            return readings != null ? (ActionResult)new JsonResult(dayArray) : new BadRequestObjectResult("No Zip Provided");
         }
     }
 }
