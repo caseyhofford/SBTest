@@ -31,7 +31,9 @@ namespace WeatherEF.Migrations
 
                     b.Property<int>("LocationZipID");
 
-                    b.Property<string>("TimeZone");
+                    b.Property<DateTime>("Sunrise");
+
+                    b.Property<DateTime>("Sunset");
 
                     b.HasKey("DayID");
 
@@ -71,7 +73,7 @@ namespace WeatherEF.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<byte>("Clouds");
+                    b.Property<short>("Clouds");
 
                     b.Property<int>("DayID");
 
@@ -102,9 +104,7 @@ namespace WeatherEF.Migrations
 
             modelBuilder.Entity("WeatherEF.WeatherType", b =>
                 {
-                    b.Property<int>("WeatherTypeID")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                    b.Property<int>("WeatherTypeID");
 
                     b.Property<string>("Description");
 

@@ -15,7 +15,6 @@ namespace SBTest
             string SqlConnection = Environment.GetEnvironmentVariable("sqldb_connection");
             builder.Services.AddDbContext<WeatherContext>(
                 options => options.UseSqlServer(SqlConnection));
-            Console.WriteLine("Connection String: " + SqlConnection);
         }
     }
 }

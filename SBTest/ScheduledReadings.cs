@@ -19,7 +19,7 @@ namespace SBTest
             this.weatherContext = weatherContext;
         }
         [FunctionName("UpdateDatabase")]
-        public async Task Run([TimerTrigger("0/10 * * * * *")]TimerInfo myTimer, ILogger log)
+        public async Task Run([TimerTrigger("0 0/10 * * * *")]TimerInfo myTimer, ILogger log)
         {
             var allLocations = await weatherContext.Location.ToListAsync();
             // Get the connection string from app settings and use it to create a connection.
@@ -50,12 +50,13 @@ namespace SBTest
                         WindDirection = Convert.ToInt16(weatherData.wind.deg ?? null),
                         WindGust = Convert.ToDecimal(weatherData.wind.gust ?? null),
                         Temperature = Convert.ToDecimal(weatherData.main.temp),
-                        Clouds = Convert.ToInt32(weatherData.clouds.all),
+                        Clouds = Convert.ToInt16(weatherData.clouds.all),
                         DayID = Convert.ToInt32(dayID)
                     }
                 );
 
             }
+            weatherContext.SaveChanges();
         }
         //Takes in a ZipCode as a string and returns weather data from the API as an object
         public static dynamic GetWeather(string zip)
@@ -123,9 +124,9 @@ namespace SBTest
                 //Query to add day if it doesn't exist
                 string query = "BEGIN " +
                                 "IF NOT EXISTS " +
-                                    $"(SELECT * FROM Day WHERE LocationZipID = {zipcode} AND Day = \'{dayStr}\') " +
+                                    $"(SELECT * FROM Day WHERE LocationZipID = {zipcode} AND Date = \'{dayStr}\') " +
                                 "BEGIN " +
-                                    "INSERT INTO Day ([LocationZipID],[Day],[Sunrise],[Sunset]) " +
+                                    "INSERT INTO Day ([LocationZipID],[Date],[Sunrise],[Sunset]) " +
                                     $"VALUES ({zipcode},\'{dayStr}\',\'{sunriseStr}\',\'{sunsetStr}\') " +
                                 "END " +
                                 "END";
@@ -137,7 +138,7 @@ namespace SBTest
                     Console.WriteLine($"{rows} rows updated");
                 }
                 //query to get DayID
-                string getId = $"SELECT DayID FROM Day WHERE LocationZipID = {zipcode} AND Day = \'{dayStr}\';";
+                string getId = $"SELECT DayID FROM Day WHERE LocationZipID = {zipcode} AND Date = \'{dayStr}\';";
                 Console.WriteLine(getId);
                 using (SqlCommand cmd = new SqlCommand(getId, conn))
                 {

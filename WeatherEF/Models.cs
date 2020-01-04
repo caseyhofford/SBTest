@@ -75,7 +75,7 @@ namespace WeatherEF
         public short WindDirection { get; set; }
         public decimal WindGust { get; set; }
         public decimal Temperature { get; set; }
-        public byte Clouds { get; set; }
+        public short Clouds { get; set; }
         public int DayID { get; set; }
 
         [ForeignKey("LocationZipID")]
@@ -88,7 +88,8 @@ namespace WeatherEF
         public int DayID { get; set; }
         public int LocationZipID { get; set; }
         public DateTime Date { get; set; }
-        public string TimeZone { get; set; }
+        public DateTime Sunrise { get; set; }
+        public DateTime Sunset { get; set; }
 
         public ICollection<Reading> Readings { get; set; }
     }

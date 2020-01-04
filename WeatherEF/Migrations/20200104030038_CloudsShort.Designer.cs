@@ -10,8 +10,8 @@ using WeatherEF;
 namespace WeatherEF.Migrations
 {
     [DbContext(typeof(WeatherContext))]
-    [Migration("20200104000731_SeedLocations")]
-    partial class SeedLocations
+    [Migration("20200104030038_CloudsShort")]
+    partial class CloudsShort
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -33,7 +33,9 @@ namespace WeatherEF.Migrations
 
                     b.Property<int>("LocationZipID");
 
-                    b.Property<string>("TimeZone");
+                    b.Property<DateTime>("Sunrise");
+
+                    b.Property<DateTime>("Sunset");
 
                     b.HasKey("DayID");
 
@@ -73,7 +75,7 @@ namespace WeatherEF.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<byte>("Clouds");
+                    b.Property<short>("Clouds");
 
                     b.Property<int>("DayID");
 
@@ -104,9 +106,7 @@ namespace WeatherEF.Migrations
 
             modelBuilder.Entity("WeatherEF.WeatherType", b =>
                 {
-                    b.Property<int>("WeatherTypeID")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                    b.Property<int>("WeatherTypeID");
 
                     b.Property<string>("Description");
 

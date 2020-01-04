@@ -10,7 +10,7 @@ using WeatherEF;
 namespace WeatherEF.Migrations
 {
     [DbContext(typeof(WeatherContext))]
-    [Migration("20200103222913_Initial")]
+    [Migration("20200104025353_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,7 +33,9 @@ namespace WeatherEF.Migrations
 
                     b.Property<int>("LocationZipID");
 
-                    b.Property<string>("TimeZone");
+                    b.Property<DateTime>("Sunrise");
+
+                    b.Property<DateTime>("Sunset");
 
                     b.HasKey("DayID");
 
@@ -59,6 +61,12 @@ namespace WeatherEF.Migrations
                     b.HasKey("Zip");
 
                     b.ToTable("Location");
+
+                    b.HasData(
+                        new { Zip = 98177, City = "Seattle", Latitude = 47.75m, Longitude = -122.37m, TimeZone = "Pacific Standard Time" },
+                        new { Zip = 90004, City = "Los Angeles", Latitude = 34.08m, Longitude = -118.3m, TimeZone = "Pacific Standard Time" },
+                        new { Zip = 80904, City = "Colorado Springs", Latitude = 38.85m, Longitude = -104.86m, TimeZone = "Mountain Standard Time" }
+                    );
                 });
 
             modelBuilder.Entity("WeatherEF.Reading", b =>
@@ -98,9 +106,7 @@ namespace WeatherEF.Migrations
 
             modelBuilder.Entity("WeatherEF.WeatherType", b =>
                 {
-                    b.Property<int>("WeatherTypeID")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                    b.Property<int>("WeatherTypeID");
 
                     b.Property<string>("Description");
 

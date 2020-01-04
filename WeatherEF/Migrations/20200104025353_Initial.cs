@@ -28,8 +28,7 @@ namespace WeatherEF.Migrations
                 name: "WeatherType",
                 columns: table => new
                 {
-                    WeatherTypeID = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    WeatherTypeID = table.Column<int>(nullable: false),
                     Name = table.Column<string>(nullable: true),
                     Description = table.Column<string>(nullable: true)
                 },
@@ -46,7 +45,8 @@ namespace WeatherEF.Migrations
                         .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
                     LocationZipID = table.Column<int>(nullable: false),
                     Date = table.Column<DateTime>(nullable: false),
-                    TimeZone = table.Column<string>(nullable: true),
+                    Sunrise = table.Column<DateTime>(nullable: false),
+                    Sunset = table.Column<DateTime>(nullable: false),
                     LocationZip = table.Column<int>(nullable: true)
                 },
                 constraints: table =>
@@ -98,6 +98,21 @@ namespace WeatherEF.Migrations
                         principalColumn: "WeatherTypeID",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "Location",
+                columns: new[] { "Zip", "City", "Latitude", "Longitude", "TimeZone" },
+                values: new object[] { 98177, "Seattle", 47.75m, -122.37m, "Pacific Standard Time" });
+
+            migrationBuilder.InsertData(
+                table: "Location",
+                columns: new[] { "Zip", "City", "Latitude", "Longitude", "TimeZone" },
+                values: new object[] { 90004, "Los Angeles", 34.08m, -118.3m, "Pacific Standard Time" });
+
+            migrationBuilder.InsertData(
+                table: "Location",
+                columns: new[] { "Zip", "City", "Latitude", "Longitude", "TimeZone" },
+                values: new object[] { 80904, "Colorado Springs", 38.85m, -104.86m, "Mountain Standard Time" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Day_LocationZip",
