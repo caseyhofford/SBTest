@@ -2,63 +2,59 @@ using System;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RestSharp;
+using WeatherEF;
 
 namespace SBTest
 {
-    public static class UpdateDatabase
+    public class UpdateDatabase
     {
-        [FunctionName("UpdateDatabase")]
-        public static async Task Run([TimerTrigger("0 0 * * * *")]TimerInfo myTimer, ILogger log)
+        private readonly WeatherContext weatherContext;
+        public UpdateDatabase(WeatherContext weatherContext)
         {
+            Console.WriteLine("Context Set");
+            this.weatherContext = weatherContext;
+        }
+        [FunctionName("UpdateDatabase")]
+        public async Task Run([TimerTrigger("0/10 * * * * *")]TimerInfo myTimer, ILogger log)
+        {
+            var allLocations = await weatherContext.Location.ToListAsync();
             // Get the connection string from app settings and use it to create a connection.
-            var str = Environment.GetEnvironmentVariable("sqldb_connection");
-
-            using (SqlConnection conn = new SqlConnection(str))
+            foreach (Location current in allLocations)
             {
-                string addReadings = "INSERT INTO Reading " +
-                "([LocationZipID],[ReadingDateTime],[WeatherTypeID],[WindSpeed],[WindDirection],[WindGust],[Temperature],[Clouds],[DayID]) " +
-                "VALUES";
-                //Get the locations table as an array
-                string zipsQuery = "SELECT Zip FROM Location";
+                Console.WriteLine(current.Zip);
+                int zipcode = current.Zip;
+                dynamic weatherData = GetWeather(Convert.ToString(zipcode));
+                log.LogInformation($"Found Weather:\n{weatherData}");
+                //Convert datetime to YYYY-MM-DD hh:mm:ss
+                DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
+                DateTime readDT = epoch.AddSeconds(Convert.ToDouble(weatherData.dt));
 
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand(zipsQuery, conn))
-                {
-                    SqlDataReader zipsReader = await cmd.ExecuteReaderAsync();
-                    while (zipsReader.Read())
+                //Set Weather Type
+                dynamic weatherType = weatherData.weather[0];
+                AddWeatherType(weatherType);
+
+                //Set Day Relationship
+                string dayID = GetDayID(Convert.ToString(zipcode), Convert.ToDouble(weatherData.dt), Convert.ToDouble(weatherData.timezone), weatherData.sys);
+
+                weatherContext.Reading.Add(
+                    new Reading
                     {
-                        string zipcode = Convert.ToString(zipsReader.GetValue(0));
-                        log.LogInformation($"Found Zipcode: {zipcode}");
-                        dynamic weatherData = GetWeather(zipcode);
-                        log.LogInformation($"Found Weather:\n{weatherData}");
-                        //Convert datetime to YYYY-MM-DD hh:mm:ss
-                        DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
-                        DateTime readDT = epoch.AddSeconds(Convert.ToDouble(weatherData.dt));
-                        string formatDT = readDT.ToString("yyyy-MM-dd HH:mm:ss");
-
-                        //Set Weather Type
-                        dynamic weatherType = weatherData.weather[0];
-                        AddWeatherType(weatherType);
-
-                        //Set Day Relationship
-                        string dayID = GetDayID(zipcode, Convert.ToDouble(weatherData.dt), Convert.ToDouble(weatherData.timezone), weatherData.sys);
-
-                        string reading = $" ({zipcode},\'{formatDT}\',{weatherType.id},{weatherData.wind.speed},{weatherData.wind.deg ?? "NULL"},{weatherData.wind.gust ?? "NULL"},{weatherData.main.temp},{weatherData.clouds.all},{dayID}),";
-                        addReadings += reading;
+                        LocationZipID = zipcode,
+                        ReadingDateTime = readDT,
+                        WeatherTypeID = weatherType.id,
+                        WindSpeed = Convert.ToDecimal(weatherData.wind.speed),
+                        WindDirection = Convert.ToInt16(weatherData.wind.deg ?? null),
+                        WindGust = Convert.ToDecimal(weatherData.wind.gust ?? null),
+                        Temperature = Convert.ToDecimal(weatherData.main.temp),
+                        Clouds = Convert.ToInt32(weatherData.clouds.all),
+                        DayID = Convert.ToInt32(dayID)
                     }
-                    zipsReader.Close();
-                }
+                );
 
-                addReadings = addReadings.TrimEnd(',') + ";";
-                log.LogInformation(addReadings);
-                using (SqlCommand cmdInsert = new SqlCommand(addReadings, conn))
-                {
-                    var rows = await cmdInsert.ExecuteNonQueryAsync();
-                    log.LogInformation($"{rows} rows were updated");
-                }
             }
         }
         //Takes in a ZipCode as a string and returns weather data from the API as an object
@@ -66,7 +62,7 @@ namespace SBTest
         {
             string token = "8358673f01a549b46b006ef9858d324e";
 
-            var client = new RestClient($"https://api.openweathermap.org/data/2.5/weather?appid={token}&zip={zip},us");
+            var client = new RestClient($"https://api.openweathermap.org/data/2.5/weather?appid={token}&units=imperial&zip={zip},us");
             client.Timeout = -1;
             var request = new RestRequest(Method.GET);
             IRestResponse response = client.Execute(request);

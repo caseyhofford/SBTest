@@ -4,8 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SBTest", "SBTest\SBTest.csproj", "{CB366B2D-51CE-4917-A6F8-13A853E305B5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FCFE6AE5-CCE1-454F-ADA5-206F79DCE3AC} = {FCFE6AE5-CCE1-454F-ADA5-206F79DCE3AC}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeatherEF", "WeatherEF\WeatherEF.csproj", "{FCFE6AE5-CCE1-454F-ADA5-206F79DCE3AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WeatherEF", "WeatherEF\WeatherEF.csproj", "{FCFE6AE5-CCE1-454F-ADA5-206F79DCE3AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -32,7 +32,7 @@ namespace SBTest
                          where c.ReadingDateTime > DateTime.Now.AddHours(-24)
                          select c.Temperature);*/
             var reads = weatherContext.Reading;
-            Reading firstReading = await reads.FindAsync(102);
+            Reading firstReading = await reads.FindAsync(Guid.Parse("102"));
             decimal readingtemp = firstReading.Temperature;
             /*foreach (Reading r in readings)
             {
@@ -48,5 +48,11 @@ namespace SBTest
                 ? (ActionResult)new OkObjectResult($"Hello, {name}")
                 : new BadRequestObjectResult("Please pass a name on the query string or in the request body");*/
         }
+        //[FunctionName("UpdateDatabase")]
+        //public static async Task Run([TimerTrigger("*/15 * * * * *")]TimerInfo myTimer, ILogger log)
+        //{
+            
+        //    _ = weatherContext.Add();
+        //}
     }
 }
