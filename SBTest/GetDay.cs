@@ -9,40 +9,55 @@ using Microsoft.Extensions.Logging;
 using System.Data.SqlClient;
 using Newtonsoft.Json;
 using RestSharp;
+using WeatherEF;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace SBTest
 {
-    public static class GetDay
+    public class GetDay
     {
+        private readonly WeatherContext weatherContext;
+        public GetDay(WeatherContext weatherContext)
+        {
+            Console.WriteLine("Context Set");
+            this.weatherContext = weatherContext;
+        }
         [FunctionName("GetDay")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
-            var str = Environment.GetEnvironmentVariable("sqldb_connection");
-            string jsonString = "";
-            string zip = req.Query["zip"];
-            using (SqlConnection conn = new SqlConnection(str))
+            int zip = 0;
+            IQueryable<Reading> readings = weatherContext.Reading;
+            try
             {
-                string jsoncmd = "SELECT * FROM Reading " +
-                                    "WHERE Reading.ReadingDateTime > DATEADD(hh, -24, GETDATE()) ";
-                if (zip != null)
-                {
-                    jsoncmd += $"AND  Reading.LocationZipID = {zip} ";
-                }
-                jsoncmd += "FOR JSON AUTO";
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand(jsoncmd, conn))
-                {
-                    SqlDataReader zipsReader = await cmd.ExecuteReaderAsync();
-                    while(zipsReader.Read())
-                    {
-                        jsonString += zipsReader.GetString(0);
-                    }
-                }
+                zip = Convert.ToInt32(req.Query["zip"]);
+                Console.WriteLine("Zip parameter:: "+Convert.ToString(zip));
+                readings = readings.Where(r => r.LocationZipID == zip);
+                //readings = readings.Where(r => r.LocationZipID == zip);
             }
-            return (ActionResult)new OkObjectResult(jsonString);
+            catch (FormatException)
+            {
+                return new BadRequestObjectResult("Check Parameters");
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            readings = readings.Where(r => r.ReadingDateTime > DateTime.UtcNow.AddHours(-24));
+            decimal Temperature = readings.First().Temperature;
+            var query = from read in readings
+                        select new
+                        {
+                            ZipCode = read.LocationZipID,
+                            DateTime = read.ReadingDateTime,
+                            Temperature = read.Temperature,
+                            WindSpeed = read.WindSpeed
+                        };
+            string jsonString = JsonConvert.SerializeObject(query.ToArray());
+            return readings != null ? (ActionResult)new OkObjectResult(jsonString) : new BadRequestObjectResult("No Zip Provided");
         }
     }
 }

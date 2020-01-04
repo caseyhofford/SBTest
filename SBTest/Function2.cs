@@ -21,38 +21,25 @@ namespace SBTest
             Console.WriteLine("Context Set");
             this.weatherContext = weatherContext;
         }
-        [FunctionName("GetReadings")]
-        public async Task<IActionResult> GetReadings(
+
+        [FunctionName("GetReading")]
+        public async Task<IActionResult> GetReading(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            /*var query = (from c in weatherContext.Reading
-                         where c.ReadingDateTime > DateTime.Now.AddHours(-24)
-                         select c.Temperature);*/
             var reads = weatherContext.Reading;
-            Reading firstReading = await reads.FindAsync(Guid.Parse("102"));
-            decimal readingtemp = firstReading.Temperature;
-            /*foreach (Reading r in readings)
-            {
-                readingstring += r.Temperature;
-            }*/
-            log.LogInformation(readingtemp.ToString());
-            return new OkObjectResult("OK: "+ readingtemp.ToString());
-            /*string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
-
-            return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");*/
+            int id = Convert.ToInt32(req.Query["id"]);
+            Reading reading = await reads.FindAsync(id);
+            var readObj = new {
+                    ZipCode = reading.LocationZipID,
+                    DateTime = reading.ReadingDateTime,
+                    Temperature = reading.Temperature,
+                    WindSpeed = reading.WindSpeed
+                };
+            string jsonString = JsonConvert.SerializeObject(readObj);
+            return reading != null ? (ActionResult)new OkObjectResult(jsonString) : new BadRequestObjectResult("No Valid ID Provided");
         }
-        //[FunctionName("UpdateDatabase")]
-        //public static async Task Run([TimerTrigger("*/15 * * * * *")]TimerInfo myTimer, ILogger log)
-        //{
-            
-        //    _ = weatherContext.Add();
-        //}
     }
 }
