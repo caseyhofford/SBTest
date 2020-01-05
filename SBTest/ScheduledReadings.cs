@@ -20,7 +20,7 @@ namespace SBTest
             this.weatherContext = weatherContext;
         }
         [FunctionName("UpdateDatabase")]
-        public async Task Run([TimerTrigger("0 0/10 * * * *")]TimerInfo myTimer, ILogger log)
+        public async Task Run([TimerTrigger("0 0/1 * * * *")]TimerInfo myTimer, ILogger log)
         {
             var allLocations = await weatherContext.Location.ToListAsync();
             // Get the connection string from app settings and use it to create a connection.
@@ -75,6 +75,7 @@ namespace SBTest
         //Takes in an object containing a weather type from the API response. Adds to database if it does not exist and returns true on success
         public bool AddWeatherType(dynamic weatherType)
         {
+            Console.WriteLine("Entered add weather.");
             bool exists = true ? weatherContext.WeatherType.Find(Convert.ToInt32(weatherType.id)) != null: false;
             if (!exists) 
             {
@@ -111,19 +112,23 @@ namespace SBTest
             string sunriseStr = sunriseDT.ToString("HH:mm:ss");
             DateTime sunsetDT = epoch.AddSeconds(sunset + timezone);
             string sunsetStr = sunsetDT.ToString("HH:mm:ss");
-            bool exists = true ? weatherContext.Day.Where(d => d.LocationZipID == zipint && d.Date.Date == localDate.Date) != null : false;
+            Day matchDay = weatherContext.Day.Where(d => d.LocationZipID == zipint && d.Date.Date == localDate.Date).FirstOrDefault();
+            bool exists = true ? matchDay != null : false;
             if (!exists)
             {
-                weatherContext.Add(new Day
+                matchDay = new Day
                 {
                     LocationZipID = zipint,
                     Date = localDate.Date,
                     Sunrise = sunriseDT,
                     Sunset = sunsetDT
-                });
+                };
+                weatherContext.Add(matchDay);
             }
-            Day day = weatherContext.Day.Where(d => d.LocationZipID == zipint && d.Date.Date == localDate.Date).FirstOrDefault();
-            return day.DayID;
+            weatherContext.SaveChanges();
+            int dayID = matchDay.DayID;
+            Console.WriteLine("Searched for day.");
+            return dayID;
         }
     }
 }
