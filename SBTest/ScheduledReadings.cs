@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RestSharp;
 using WeatherEF;
+using System.Linq;
 
 namespace SBTest
 {
@@ -38,7 +39,7 @@ namespace SBTest
                 AddWeatherType(weatherType);
 
                 //Set Day Relationship
-                string dayID = GetDayID(Convert.ToString(zipcode), Convert.ToDouble(weatherData.dt), Convert.ToDouble(weatherData.timezone), weatherData.sys);
+                int dayID = GetDayID(Convert.ToString(zipcode), Convert.ToDouble(weatherData.dt), Convert.ToDouble(weatherData.timezone), weatherData.sys);
 
                 weatherContext.Reading.Add(
                     new Reading
@@ -51,9 +52,10 @@ namespace SBTest
                         WindGust = Convert.ToDecimal(weatherData.wind.gust ?? null),
                         Temperature = Convert.ToDecimal(weatherData.main.temp),
                         Clouds = Convert.ToInt16(weatherData.clouds.all),
-                        DayID = Convert.ToInt32(dayID)
+                        DayID = dayID
                     }
                 );
+                Console.WriteLine("New reading created");
 
             }
             weatherContext.SaveChanges();
@@ -73,14 +75,14 @@ namespace SBTest
         //Takes in an object containing a weather type from the API response. Adds to database if it does not exist and returns true on success
         public bool AddWeatherType(dynamic weatherType)
         {
-            bool exists = true ? weatherContext.WeatherType.Find(weatherType.id): false;
+            bool exists = true ? weatherContext.WeatherType.Find(Convert.ToInt32(weatherType.id)) != null: false;
             if (!exists) 
             {
                 weatherContext.Add(new WeatherType
                 {
-                    WeatherTypeID = weatherType.id,
-                    Name = weatherType.main,
-                    Description = weatherType.description
+                    WeatherTypeID = Convert.ToInt32(weatherType.id),
+                    Name = Convert.ToString(weatherType.main),
+                    Description = Convert.ToString(weatherType.description)
                 });
                 return true;
             }
@@ -89,12 +91,13 @@ namespace SBTest
 
         //Gets the DayID for a specified datetime and zipcode, adds it if not found. Returns the DayID
         //Requires a zipcode string, the date as a double of unix time, the zips timezone and the API response's sys field
-        public static string GetDayID(string zipcode, double unixDate, double timezone, dynamic sched)
+        public int GetDayID(string zipcode, double unixDate, double timezone, dynamic sched)
         {
             //double unixDate = Convert.ToDouble(unixDateStr);
             //double timezone = Convert.ToDouble(timezoneStr);
             Console.WriteLine("Entered GetDayID");
             DateTime epoch = new System.DateTime(1970, 1, 1, 0, 0, 0, 0);
+            int zipint = Convert.ToInt32(zipcode);
             //Get Current Day String for Local TZ
             double localtimeUnix = unixDate + timezone;
             DateTime localDate = epoch.AddSeconds(localtimeUnix);
@@ -108,38 +111,19 @@ namespace SBTest
             string sunriseStr = sunriseDT.ToString("HH:mm:ss");
             DateTime sunsetDT = epoch.AddSeconds(sunset + timezone);
             string sunsetStr = sunsetDT.ToString("HH:mm:ss");
-
-            var str = Environment.GetEnvironmentVariable("sqldb_connection");
-            using (SqlConnection conn = new SqlConnection(str))
+            bool exists = true ? weatherContext.Day.Where(d => d.LocationZipID == zipint && d.Date.Date == localDate.Date) != null : false;
+            if (!exists)
             {
-
-                conn.Open();
-                //Query to add day if it doesn't exist
-                string query = "BEGIN " +
-                                "IF NOT EXISTS " +
-                                    $"(SELECT * FROM Day WHERE LocationZipID = {zipcode} AND Date = \'{dayStr}\') " +
-                                "BEGIN " +
-                                    "INSERT INTO Day ([LocationZipID],[Date],[Sunrise],[Sunset]) " +
-                                    $"VALUES ({zipcode},\'{dayStr}\',\'{sunriseStr}\',\'{sunsetStr}\') " +
-                                "END " +
-                                "END";
-
-                Console.WriteLine(query);
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                weatherContext.Add(new Day
                 {
-                    int rows = cmd.ExecuteNonQuery();
-                    Console.WriteLine($"{rows} rows updated");
-                }
-                //query to get DayID
-                string getId = $"SELECT DayID FROM Day WHERE LocationZipID = {zipcode} AND Date = \'{dayStr}\';";
-                Console.WriteLine(getId);
-                using (SqlCommand cmd = new SqlCommand(getId, conn))
-                {
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    reader.Read();
-                    return (Convert.ToString(reader.GetValue(0)));
-                }
+                    LocationZipID = zipint,
+                    Date = localDate.Date,
+                    Sunrise = sunriseDT,
+                    Sunset = sunsetDT
+                });
             }
+            Day day = weatherContext.Day.Where(d => d.LocationZipID == zipint && d.Date.Date == localDate.Date).FirstOrDefault();
+            return day.DayID;
         }
     }
 }

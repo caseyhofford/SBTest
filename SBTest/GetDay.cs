@@ -51,7 +51,8 @@ namespace SBTest
                 throw ex;
             }
             readings = readings.Where(r => r.ReadingDateTime > DateTime.UtcNow.AddHours(-24));
-            days = days.Where(r => r.Date.Date == DateTime.Today.Date);
+            //the -8 hours is a hacky solution because I haven't handled timezones correctly
+            days = days.Where(r => r.Date.Date == DateTime.Now.AddHours(-8).Date);
             decimal Temperature = readings.First().Temperature;
             //var readQ = from read in readings
 
